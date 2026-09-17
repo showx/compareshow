@@ -2,8 +2,11 @@ node_modules
 out
 dist
 release
+bin
+obj
 .DS_Store
 *.log
 .idea
 .vscode
 *.local
+*.user
