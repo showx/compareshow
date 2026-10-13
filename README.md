@@ -1,78 +1,55 @@
 # CompareShow
 
-面向本地与 SFTP 的 **Windows 窗体** 文件对比工具。并排查看目录差异、逐行比对文本、把变更同步到另一侧。
+本地和 SFTP 文件夹对比工具。界面是原生窗口，支持 macOS、Windows、Linux。
 
-支持 **本地 ↔ 本地**、**本地 ↔ SFTP**、**SFTP ↔ SFTP**。
-
-不再使用 Electron / JavaScript。比较、列表、SFTP 传输都在 .NET 原生线程里跑，界面用虚拟绘制列表，大目录时更稳、更好控速。
+可以只开一侧，也可以左右一起看：**本地 ↔ 本地**、**本地 ↔ SFTP**、**SFTP ↔ SFTP**。
 
 ## 功能
 
-- 文件夹树状对比：相同 / 不同 / 仅左 / 仅右
-- 两种比较规则
-  - **按时间/大小**：快速扫描
-  - **按文件内容**：MD5，更准、更慢
-- 文本文件按行并排对比：单击即可编辑全文（换行/删行），复制本行或差异块，分别保存左右两侧
-- 二进制或超过 8MB 的文件只比哈希，不打开文本
-- 复制到左 / 右、同步差异
-- 路径栏直接输入地址回车即可列出文件
-  - 本地路径
-  - `ssh://root@主机`
-  - `sftp://user@host:22/path`
-  - `user@host`
-- SFTP 优先使用本机 `~/.ssh` 私钥，密钥失败后再提示密码
-- 读取 `~/.ssh/config`（Host、User、Port、IdentityFile）
-- 保存连接与最近会话；密码使用 Windows DPAPI 加密
-
-## 环境要求
-
-- Windows 10 / 11
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)（开发）
-- 运行已编译程序只需 .NET 8 Desktop Runtime
-
-## 快速开始
-
-```powershell
-dotnet build src/CompareShow/CompareShow.csproj -c Release
-dotnet run --project src/CompareShow/CompareShow.csproj -c Release
-```
-
-生成结果在：
-
-`src/CompareShow/bin/Release/net8.0-windows/CompareShow.exe`
-
-首次启动后，在左右路径栏分别填入本地目录或 SFTP 地址，回车列出文件，再点 **比较**。
-
-也可以在侧栏 **新建** SFTP 连接，保存后从路径栏下拉选用。
-
-## 常用操作
-
-| 操作 | 说明 |
-| --- | --- |
-| 回车 | 解析路径并列出当前目录 |
-| 双击文件 | 打开文本差异；单击即可编辑，Ctrl+S 保存左/右 |
-| 双击文件夹 | 展开 / 折叠（Ctrl+Enter 进入） |
-| 三角按钮 / 展开 | 展开 / 折叠子树 |
-| Ctrl / Shift 点击 | 多选 |
-| Backspace | 返回上级 |
-| → / ← | 把当前项复制到对侧 |
-| F5 | 重新列出或重新比较 |
+- 单击文件夹就地展开，不用双击进入
+- 按修改时间和大小比较，或按文件内容比较
+- 文本逐行对照，带语法高亮；可以只选中若干行复制到另一侧
+- 删除文件或文件夹前会确认，也可以查看路径、大小、时间和权限
+- 记住最近打开的位置，下次启动直接打开
+- 路径可以是本地目录，或 `sftp://user@host/path`、`ssh://user@host:22/path`
+- 优先用 SSH agent 和 `~/.ssh` 私钥，并读取 `~/.ssh/config`
+- 新主机密钥写到 `~/.ssh/compareshow_known_hosts`
+- 勾选记住密码后，密码放进系统钥匙串，不写进会话文件
 
 默认忽略：`node_modules`、`.git`、`.svn`、`dist`、`out`、`.DS_Store`、`Thumbs.db`。
 
-## 项目结构
+## 环境
 
+- Rust stable（1.88 或更新）
+- 首次编译会在本地构建 OpenSSL 和 libssh2
+
+## 构建与运行
+
+```bash
+cargo run --release
 ```
-src/CompareShow/
-  Core/     比较引擎、本地文件系统、SFTP、会话存储
-  Ui/       WinForms 主窗体、双栏列表、路径栏、文本 Diff
+
+开发时：
+
+```bash
+cargo test
+cargo run
 ```
 
-连接与最近会话保存在 `%AppData%\CompareShow\sessions.json`。密码、私钥口令使用当前 Windows 用户 DPAPI 加密，界面里不会回显明文。
+## 操作
 
-## 技术栈
+| 操作 | 说明 |
+| --- | --- |
+| 回车 | 打开路径栏里的位置 |
+| 单击文件夹 | 展开或折叠 |
+| 双击文件 | 打开逐行差异 |
+| Shift 或拖动 | 在差异里选中一段，再点「选中复制到右」 |
+| 行中间的箭头 | 把这一行复制到另一侧 |
+| Delete | 删除选中项，先确认 |
+| F5 | 重新读取；在差异页则重新打开文件 |
+| Esc | 关闭差异页或对话框 |
 
-C# · .NET 8 WinForms · SSH.NET · DiffPlex
+会话保存在系统应用数据目录。macOS 上是 `~/Library/Application Support/com.compareshow.CompareShow2/sessions.json`。密码不在这个文件里。
 
 ## 许可证
 

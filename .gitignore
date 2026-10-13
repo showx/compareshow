@@ -4,6 +4,7 @@ dist
 release
 bin
 obj
+target
 .DS_Store
 *.log
 .idea

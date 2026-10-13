@@ -1,0 +1,22 @@
+[package]
+name = "compareshow"
+version = "2.0.0"
+edition = "2021"
+description = "本地与 SFTP 文件对比工具"
+license = "MIT"
+publish = false
+
+[dependencies]
+anyhow = "1"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+directories = "6"
+eframe = "0.36"
+keyring = "4"
+md-5 = "0.10"
+rfd = "0.17"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+similar = "3"
+ssh2 = { version = "0.9.6", features = ["vendored-openssl"] }
+syntect = { version = "5.2", default-features = false, features = ["parsing", "default-syntaxes", "default-themes", "dump-load", "regex-fancy"] }
+tempfile = "3"
