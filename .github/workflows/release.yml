@@ -1,0 +1,125 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  MACOSX_DEPLOYMENT_TARGET: "11.0"
+
+jobs:
+  macos:
+    name: macOS universal
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: macos-universal
+
+      - name: Build Apple Silicon and Intel
+        run: |
+          set -eux
+          cargo build --release --target aarch64-apple-darwin
+          cargo build --release --target x86_64-apple-darwin
+
+      - name: Pack CompareShow.app
+        run: |
+          set -eux
+          APP="dist/CompareShow.app"
+          mkdir -p "$APP/Contents/MacOS"
+          cp packaging/macos/Info.plist "$APP/Contents/Info.plist"
+          lipo -create -output "$APP/Contents/MacOS/compareshow" \
+            target/aarch64-apple-darwin/release/compareshow \
+            target/x86_64-apple-darwin/release/compareshow
+          chmod +x "$APP/Contents/MacOS/compareshow"
+          codesign --force --sign - "$APP/Contents/MacOS/compareshow"
+          codesign --force --sign - "$APP"
+          cat > dist/打开说明.txt << 'EOF'
+          CompareShow 2.0.0（macOS，Apple 芯片和 Intel 通用）
+
+          解压后打开 CompareShow.app。
+          第一次若提示无法验证开发者：在 Finder 里按住 Control 点按 CompareShow.app，选择「打开」，再确认一次。
+          EOF
+          STAGE="$(mktemp -d)"
+          mv "$APP" "$STAGE/CompareShow.app"
+          mv dist/打开说明.txt "$STAGE/打开说明.txt"
+          rm -rf dist
+          mkdir -p dist
+          ditto -c -k "$STAGE" dist/CompareShow-macos.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CompareShow-macos
+          path: dist/CompareShow-macos.zip
+
+  windows:
+    name: Windows x64
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: windows-x64
+
+      - name: Build
+        run: cargo build --release --target x86_64-pc-windows-msvc
+
+      - name: Pack zip
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Copy-Item target\x86_64-pc-windows-msvc\release\compareshow.exe dist\compareshow.exe
+          @"
+          CompareShow 2.0.0（Windows 64 位）
+
+          解压后运行 compareshow.exe。
+          若 SmartScreen 拦截：点「更多信息」，再点「仍要运行」。
+          "@ | Set-Content -Encoding utf8 dist\打开说明.txt
+          Compress-Archive -Path dist\compareshow.exe, dist\打开说明.txt -DestinationPath CompareShow-windows-x86_64.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CompareShow-windows-x86_64
+          path: CompareShow-windows-x86_64.zip
+
+  publish:
+    name: Publish GitHub Release
+    needs: [macos, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: CompareShow ${{ github.ref_name }}
+          files: dist/*
+          body: |
+            ## 下载
+
+            - macOS（Apple 芯片和 Intel 通用）：`CompareShow-macos.zip`，解压后打开 `CompareShow.app`
+            - Windows 64 位：`CompareShow-windows-x86_64.zip`，解压后运行 `compareshow.exe`
+
+            macOS 第一次若提示无法验证开发者，在 Finder 里按住 Control 点按 `CompareShow.app`，选择「打开」，再确认一次。
+
+            Windows 若被 SmartScreen 拦截，点「更多信息」，再点「仍要运行」。
+
+            这两个包没有代码签名。源码和用法见仓库 [README](https://github.com/showx/compareshow)。

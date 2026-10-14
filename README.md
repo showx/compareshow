@@ -45,12 +45,25 @@ CompareShow 是一个原生桌面程序，用来并排查看、对比和复制�
 - 连接和读取目录时，界面显示当前步骤，可以取消。
 - 已知主机同时对照 `~/.ssh/known_hosts` 和 `~/.ssh/compareshow_known_hosts`。密钥不符会拒绝连接。第一次见到的主机只写入 `compareshow_known_hosts`。
 
-## 安装
+## 下载
 
-需要 [Rust](https://www.rust-lang.org/tools/install) stable（1.88 或更新）。首次编译会在本地构建 OpenSSL 和 libssh2，时间会久一些。
+发布包在 [Releases](https://github.com/showx/compareshow/releases)。
+
+| 系统 | 文件 |
+| --- | --- |
+| macOS（Apple 芯片和 Intel 通用） | `CompareShow-macos.zip` |
+| Windows 64 位 | `CompareShow-windows-x86_64.zip` |
+
+macOS 解压后打开 `CompareShow.app`。第一次若提示无法验证开发者，在 Finder 里按住 Control 点按应用，选择「打开」，再确认一次。
+
+Windows 解压后运行 `compareshow.exe`。若 SmartScreen 拦截，点「更多信息」，再点「仍要运行」。
+
+这两个包没有代码签名。
+
+从源码编译需要 [Rust](https://www.rust-lang.org/tools/install) stable（1.88 或更新）。首次编译会在本地构建 OpenSSL 和 libssh2，时间会久一些。
 
 ```bash
-git clone <仓库地址>
+git clone https://github.com/showx/compareshow.git
 cd compareshow
 cargo run --release
 ```
